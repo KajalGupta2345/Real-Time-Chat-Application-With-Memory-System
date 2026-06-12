@@ -194,14 +194,6 @@ Sessions are managed using **JWT tokens stored in HTTP-only cookies** — preven
 
 ---
 
-## 📸 Screenshots
-
-> _Add screenshots of your app here_
->
-> Example: Login page, Chat interface, AI responding with memory context
-
----
-
 ## 🌐 Live Demo
 
 > _Coming soon / Deploy link here_
