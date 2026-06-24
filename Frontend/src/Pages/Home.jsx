@@ -1,101 +1,66 @@
 import ChatSidebar from "../components/ChatSidebar";
 import ChatBody from "../components/ChatBody";
 import ChatInput from "../components/ChatInput";
-import { useState, useEffect } from "react";
-import { io } from "socket.io-client";
-import axios from "axios";
+import { useState } from "react";
+import { ChatProvider } from "../context/ChatContext";
 
-const Home = ({setAuth}) => {
-  const [arr, setArr] = useState([]);
-  const [socket, setsocket] = useState(null);
-  const [chatId, setChatId] = useState(null);
-  const [activeChatId, setActiveChatId] = useState(null);
-  const [isTyping, setIsTyping] = useState(false);
+const Home = ({ setAuth }) => {
   const [showSidebar, setShowSidebar] = useState(false);
 
-  
-
-  const handleChatSelect = async (chatId) => {
-    if (!chatId) return;
-    setActiveChatId(chatId);
-    setChatId(chatId);
-    setArr([]);
-
-    const res = await axios.get(
-      `http://localhost:3000/api/messages/${chatId}`,
-      { withCredentials: true }
-    );
-    console.log(res.data.messages);
-
-    setArr(res.data.messages);
-  };
-
-  useEffect(() => {
-    const socketInstance = io("http://localhost:3000/", {
-      withCredentials: true,
-    });
-    setsocket(socketInstance);
-
-    socketInstance.on("ai-start", () => {
-      setIsTyping(true);
-    });
-
-    socketInstance.on("ai-response", (response) => {
-      setIsTyping(false);
-        const aiMsg = {
-        role: "model",
-        content: response.content,
-      };
-      setArr((prev) => [...prev, aiMsg]);
-    });
-    return () => socketInstance.disconnect();
-  }, []);
-
   return (
-    <div
-      className="
-      w-full flex  h-screen relative  bg-[#212121]"
-    >
-      <button
-        className="md:hidden p-2 text-white text-2xl absolute top-3 left-3 z-40"
-        onClick={() => setShowSidebar(true)}
-      >
-        <i class="ri-menu-line"></i>
-      </button>
-      {/* Mobile Sidebar */}
-
-      {showSidebar && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 md:hidden"
-          onClick={() => setShowSidebar(false)}
+    <ChatProvider setAuth={setAuth}>
+      <div className="w-full flex h-screen relative bg-[var(--bg-primary)] transition-colors duration-300">
+        <button
+          type="button"
+          className="
+            md:hidden flex items-center justify-center
+            w-10 h-10 rounded-[var(--radius-md)]
+            bg-[var(--bg-tertiary)]
+            border border-[var(--border-color)]
+            text-[var(--text-primary)] text-xl
+            absolute top-3 left-3 z-40
+            hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]
+            active:scale-95 transition-colors duration-200
+          "
+          onClick={() => setShowSidebar(true)}
         >
-            <ChatSidebar
-              handleChatSelect={handleChatSelect}
-              activeChatId={activeChatId}
-              onClose={() => setShowSidebar(false)}
-              setArr={setArr}
-              setActiveChatId={setActiveChatId}
-              setChatId={setChatId}
-            />
+          <i className="ri-menu-line"></i>
+        </button>
+
+        {/* Mobile Sidebar — slide in/out */}
+        <div
+          className={`
+            fixed inset-0 z-50 md:hidden
+            transition-opacity duration-300
+            ${showSidebar ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
+          `}
+        >
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowSidebar(false)}
+          />
+          <div
+            className={`
+              relative h-full w-fit
+              transition-transform duration-300 ease-out
+              ${showSidebar ? "translate-x-0" : "-translate-x-full"}
+            `}
+          >
+            <ChatSidebar onClose={() => setShowSidebar(false)} />
+          </div>
         </div>
-      )}
 
-       {/* 💻 Desktop Sidebar */}
-      <div className="hidden md:flex">
-        <ChatSidebar
-          handleChatSelect={handleChatSelect}
-          activeChatId={activeChatId}
-          setArr={setArr}
-          setActiveChatId={setActiveChatId}
-          setChatId={setChatId}
-        />
-      </div> 
+        {/* Desktop Sidebar */}
+        <div className="hidden md:flex">
+          <ChatSidebar />
+        </div>
 
-      <div className="flex flex-col justify-between w-full bg-[#212121] backdrop-blur-lg">
-        <ChatBody arr={arr} activeChatId={activeChatId} isTyping={isTyping} setAuth={setAuth} />
-        <ChatInput setArr={setArr} socketInstance={socket} chatId={chatId} />
+        <div className="flex flex-col justify-between w-full bg-[var(--bg-primary)]">
+          <ChatBody />
+          <ChatInput />
+        </div>
       </div>
-    </div>
+    </ChatProvider>
   );
 };
 

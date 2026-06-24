@@ -1,72 +1,138 @@
 import axios from "axios";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const Login = ({ setAuth }) => {
-  const { register, reset, handleSubmit } = useForm();
+  const {
+    register,
+    reset,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm();
   const navigate = useNavigate();
 
-  const submitHandler = (data) => {
-    axios.post(
-      "http://localhost:3000/api/auth/login",
-      {
-        email: data.email,
-        password: data.password,
-      },
-      {
-        withCredentials: true, 
-      }
-    ).then((res) => {
-      console.log(res);
-      // 1. Success Toast
-      toast.success("Welcome back! Login Successful."); 
-      setAuth(true); 
+  const submitHandler = async (data) => {
+    try {
+      await axios.post(
+        "http://localhost:3000/api/auth/login",
+        { email: data.email, password: data.password },
+        { withCredentials: true },
+      );
+
+      toast.success("Welcome back!");
+      setAuth(true);
       reset();
-      navigate('/');
-    }).catch((err) => {
-      console.error(err);
-      // 2. Dynamic Error Message (Agar backend se message aa raha ho)
-      const errorMsg = err.response?.data?.message || "Invalid email or password!";
+      navigate("/");
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || "Wrong email or password!";
       toast.error(errorMsg);
-    });
+    }
   };
 
   return (
-    <div className="w-full min-h-screen flex justify-center items-center bg-[#121212] px-4 py-2">
+    <div
+      className="
+        w-full min-h-screen flex items-center justify-center
+        bg-[var(--bg-secondary)]
+        text-[var(--text-primary)]
+        p-4
+        transition-colors duration-300
+      "
+    >
       <form
         onSubmit={handleSubmit(submitHandler)}
-        className="flex flex-col w-full max-w-md p-6 bg-[#1e1e1e] border border-gray-700 rounded-md shadow-md"
+        className="
+          w-full max-w-md
+          p-8 rounded-[var(--radius-lg)]
+          bg-[var(--bg-input)]
+          border border-[var(--border-color)]
+          shadow-lg
+          backdrop-blur-md
+        "
       >
-        <h1 className="text-white font-bold text-3xl text-center">Sign In</h1>
-        <p className="text-gray-300 text-center text-sm mt-2">
-          Welcome back, We've missed you.
+        <h1 className="text-2xl font-bold text-center">Sign In</h1>
+
+        <p className="text-sm text-[var(--text-secondary)] text-center mt-2">
+          Welcome back to Zoro ⚡
         </p>
 
-        <input
-          type="email"
-          {...register("email", { required: true })}
-          placeholder="you@example.com"
-          className="mt-6 px-3 py-2 bg-[#2a2a2a] text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        {/* EMAIL */}
+        <div className="mt-6">
+          <label className="text-sm mb-1 block text-[var(--text-secondary)]">
+            Email Address
+          </label>
 
-        <input
-          type="password"
-          {...register("password", { required: true })}
-          placeholder="Enter password"
-          className="mt-4 px-3 py-2 bg-[#2a2a2a] text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+          <input
+            type="email"
+            {...register("email", { required: "Email is required" })}
+            placeholder="you@example.com"
+            className="
+              w-full px-3 py-2.5 rounded-[var(--radius-md)]
+              bg-[var(--bg-secondary)]
+              border border-[var(--border-color)]
+              text-[var(--text-primary)]
+              focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+              transition-colors duration-200
+            "
+          />
 
+          {errors.email && (
+            <p className="text-xs text-[var(--danger)] mt-1">
+              {errors.email.message}
+            </p>
+          )}
+        </div>
+
+        {/* PASSWORD */}
+        <div className="mt-4">
+          <label className="text-sm mb-1 block text-[var(--text-secondary)]">
+            Password
+          </label>
+
+          <input
+            type="password"
+            {...register("password", { required: "Password is required" })}
+            placeholder="Enter password"
+            className="
+              w-full px-3 py-2.5 rounded-[var(--radius-md)]
+              bg-[var(--bg-secondary)]
+              border border-[var(--border-color)]
+              text-[var(--text-primary)]
+              focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+              transition-colors duration-200
+            "
+          />
+
+          {errors.password && (
+            <p className="text-xs text-[var(--danger)] mt-1">
+              {errors.password.message}
+            </p>
+          )}
+        </div>
+
+        {/* BUTTON */}
         <button
           type="submit"
-          className="mt-6 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-colors"
+          disabled={isSubmitting}
+          className="
+            w-full mt-8 py-3
+            bg-[var(--accent)]
+            text-white font-semibold
+            rounded-[var(--radius-md)]
+            hover:bg-[var(--accent-strong)]
+            active:scale-95
+            disabled:opacity-60 disabled:cursor-not-allowed
+            transition
+          "
         >
-          Sign In
+          {isSubmitting ? "Signing in..." : "Sign In"}
         </button>
 
-        <p className="text-gray-400 text-center mt-4 text-sm">
+        {/* LINK */}
+        <p className="text-center mt-6 text-sm text-[var(--text-secondary)]">
           Don't have an account?{" "}
-          <Link to='/register' className="text-blue-500 hover:underline">
+          <Link to="/register" className="text-[var(--accent)] hover:underline">
             Sign Up
           </Link>
         </p>

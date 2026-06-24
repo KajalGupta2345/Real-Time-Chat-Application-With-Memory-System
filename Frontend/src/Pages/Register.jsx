@@ -1,10 +1,15 @@
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify"; // Toast import kiya
+import { toast } from "react-toastify";
 
 const Register = () => {
-  const { register, reset, handleSubmit } = useForm();
+  const {
+    register,
+    reset,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm();
   const navigate = useNavigate();
 
   const submitHandler = async (data) => {
@@ -19,75 +24,157 @@ const Register = () => {
           },
           password: data.password,
         },
-        {
-          withCredentials: true,
-        }
+        { withCredentials: true },
       );
 
-      if (res.status === 201 || res.status === 200) {
-        // 1. Success Toast
-        toast.success("Account created successfully! Please login.");
+      if (res.status === 200 || res.status === 201) {
+        toast.success("Account created successfully!");
         reset();
         navigate("/login");
       }
     } catch (err) {
-      console.error("Registration error:", err);
-      // 2. Error Toast (Backend ka message ya generic message)
-      const errorMsg = err.response?.data?.message || "Registration failed. Try again!";
+      const errorMsg = err.response?.data?.message || "Registration failed!";
       toast.error(errorMsg);
     }
   };
 
   return (
-    <div className="w-full min-h-screen flex justify-center items-center bg-[#121212] px-4 py-2">
+    <div
+      className="
+        w-full min-h-screen flex items-center justify-center
+        bg-[var(--bg-secondary)]
+        text-[var(--text-primary)]
+        p-4
+        transition-colors duration-300
+      "
+    >
       <form
         onSubmit={handleSubmit(submitHandler)}
-        className="flex flex-col w-full max-w-md p-6 bg-[#1e1e1e] border border-gray-700 rounded-md shadow-md"
+        className="
+          w-full max-w-md
+          p-8 rounded-[var(--radius-lg)]
+          bg-[var(--bg-input)]
+          border border-[var(--border-color)]
+          shadow-lg
+          backdrop-blur-md
+        "
       >
-        <h1 className="text-white font-bold text-3xl text-center">Sign Up</h1>
-        <p className="text-gray-300 text-center text-sm mt-2">
-          Join us and start exploring.
+        <h1 className="text-2xl font-bold text-center">Sign Up</h1>
+
+        <p className="text-sm text-[var(--text-secondary)] text-center mt-2">
+          Join Zoro and start chatting ⚡
         </p>
 
-        <input
-          type="email"
-          {...register("email", { required: true })}
-          placeholder="you@example.com"
-          className="mt-6 px-3 py-2 bg-[#2a2a2a] text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-
-        <div className="flex gap-2 mt-4">
+        {/* EMAIL */}
+        <div className="mt-6">
           <input
-            type="text"
-            {...register("firstname", { required: true })}
-            placeholder="First Name"
-            className="w-1/2 px-3 py-2 bg-[#2a2a2a] text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            type="email"
+            {...register("email", { required: "Email is required" })}
+            placeholder="you@example.com"
+            className="
+              w-full px-3 py-2.5 rounded-[var(--radius-md)]
+              bg-[var(--bg-secondary)]
+              border border-[var(--border-color)]
+              text-[var(--text-primary)]
+              focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+              transition-colors duration-200
+            "
           />
-          <input
-            type="text"
-            {...register("lastname", { required: true })}
-            placeholder="Last Name"
-            className="w-1/2 px-3 py-2 bg-[#2a2a2a] text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          {errors.email && (
+            <p className="text-xs text-[var(--danger)] mt-1">{errors.email.message}</p>
+          )}
         </div>
 
-        <input
-          type="password"
-          {...register("password", { required: true })}
-          placeholder="Create password"
-          className="mt-4 px-3 py-2 bg-[#2a2a2a] text-white border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        {/* NAME FIELDS */}
+        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+          <div className="w-full">
+            <input
+              type="text"
+              {...register("firstname", { required: "First name required" })}
+              placeholder="First Name"
+              className="
+                w-full px-3 py-2.5 rounded-[var(--radius-md)]
+                bg-[var(--bg-secondary)]
+                border border-[var(--border-color)]
+                text-[var(--text-primary)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-colors duration-200
+              "
+            />
+            {errors.firstname && (
+              <p className="text-xs text-[var(--danger)] mt-1">
+                {errors.firstname.message}
+              </p>
+            )}
+          </div>
 
+          <div className="w-full">
+            <input
+              type="text"
+              {...register("lastname", { required: "Last name required" })}
+              placeholder="Last Name"
+              className="
+                w-full px-3 py-2.5 rounded-[var(--radius-md)]
+                bg-[var(--bg-secondary)]
+                border border-[var(--border-color)]
+                text-[var(--text-primary)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-colors duration-200
+              "
+            />
+            {errors.lastname && (
+              <p className="text-xs text-[var(--danger)] mt-1">
+                {errors.lastname.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* PASSWORD */}
+        <div className="mt-4">
+          <input
+            type="password"
+            {...register("password", {
+              required: "Password is required",
+              minLength: { value: 6, message: "At least 6 characters" },
+            })}
+            placeholder="Create password"
+            className="
+              w-full px-3 py-2.5 rounded-[var(--radius-md)]
+              bg-[var(--bg-secondary)]
+              border border-[var(--border-color)]
+              text-[var(--text-primary)]
+              focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+              transition-colors duration-200
+            "
+          />
+          {errors.password && (
+            <p className="text-xs text-[var(--danger)] mt-1">{errors.password.message}</p>
+          )}
+        </div>
+
+        {/* BUTTON */}
         <button
           type="submit"
-          className="mt-6 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-colors"
+          disabled={isSubmitting}
+          className="
+            w-full mt-8 py-3
+            bg-[var(--accent)]
+            text-white font-semibold
+            rounded-[var(--radius-md)]
+            hover:bg-[var(--accent-strong)]
+            active:scale-95
+            disabled:opacity-60 disabled:cursor-not-allowed
+            transition
+          "
         >
-          Create Account
+          {isSubmitting ? "Creating account..." : "Create Account"}
         </button>
 
-        <p className="text-gray-400 text-center mt-4 text-sm">
+        {/* LINK */}
+        <p className="text-center mt-6 text-sm text-[var(--text-secondary)]">
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-500 hover:underline">
+          <Link to="/login" className="text-[var(--accent)] hover:underline">
             Sign in
           </Link>
         </p>

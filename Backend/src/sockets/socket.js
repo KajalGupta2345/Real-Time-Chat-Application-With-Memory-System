@@ -31,11 +31,17 @@ function initSocketServer(httpServer) {
         }
     });
 
-    io.on("connection", (socket) => { 
+    io.on("connection", (socket) => {
         console.log("user connected", socket.user);
         console.log("New socket connection", socket.id);
 
+        socket.on("join-chat", ({ chatId }) => {
+            socket.join(chatId);
+        });
 
+        socket.on("leave-chat", ({ chatId }) => {
+            socket.leave(chatId);
+        });
         socket.on("ai-message", async (messagePayload) => {
             console.log("AI request : ", messagePayload);
             if (!messagePayload.chat || !messagePayload.content || !messagePayload.content.trim()) {

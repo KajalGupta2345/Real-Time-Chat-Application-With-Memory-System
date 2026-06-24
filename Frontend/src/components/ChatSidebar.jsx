@@ -1,253 +1,270 @@
 import { useForm } from "react-hook-form";
-import { useEffect, useState,useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
+import ChatItem from "./ChatItem";
+import Theme from "./Theme";
+import { useChat } from "../context/ChatContext";
 
-const ChatSidebar = ({
-  handleChatSelect,
-  activeChatId,
-  onClose,
-  setArr,
-  setActiveChatId,
-  setChatId,
-}) => {
+const ChatSidebar = ({ onClose }) => {
+  const { handleChatSelect, activeChatId, setArr, setActiveChatId } = useChat();
+
   const { register, reset, handleSubmit } = useForm();
   const menuRef = useRef(null);
-
-  const [showInput, setshowInput] = useState(false);
-  const [chats, setChats] = useState([]);
   const [menuid, setmenuid] = useState(null);
+  const [chats, setChats] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const toggleMenu = (id) => {
     setmenuid((prev) => (prev === id ? null : id));
   };
+
+  // Ek hi jagah se decide hota hai "ye naam already kahin use ho raha hai ya nahi" —
+  // create aur rename dono yahi function use karte hain, taaki logic duplicate na ho
+  const isTitleTaken = (title, excludeId = null) => {
+    const normalized = title.trim().toLowerCase();
+    return chats.some(
+      (chat) => chat._id !== excludeId && chat.title.trim().toLowerCase() === normalized,
+    );
+  };
+
   const handleDeleteChat = (id) => {
     axios
       .delete(`http://localhost:3000/api/chat/${id}`, { withCredentials: true })
-      .then((response) => {
-        console.log(response);
-        setChats((prev) => prev.filter((chat) => chat._id != id));
+      .then(() => {
+        setChats((prev) => prev.filter((chat) => chat._id !== id));
         setArr([]);
         setActiveChatId(null);
-        setChatId(null);
         setmenuid(null);
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => console.log(err));
   };
-  const handleNewChat = () => {
-    setshowInput(true);
-  };
-  const createNewChat = async (data) => {
-    // console.log(data);
-    setshowInput(false);
-    try {
-      const response = await axios.post(
-        "http://localhost:3000/api/chat/",
-        { title: data.title },
-        { withCredentials: true }
-      );
-      console.log(response);
 
-      const newChat = {
-        ...response.data.chat,
-        _id: response.data.chat.id,
-      };
+  // Ab ye function khud API call karta hai aur true/false return karta hai —
+  // taaki ChatItem ko pata chale rename safal hua ya nahi (duplicate naam pe rok dena hai)
+  const handleRenameChat = async (id, newTitle) => {
+    const trimmed = newTitle.trim();
+    if (!trimmed) return false;
 
-      setChats((prev) => [...prev, newChat]);
-      handleChatSelect(newChat._id);
-    } catch (err) {
-      console.log(err);
+    if (isTitleTaken(trimmed, id)) {
+      toast.error("Ye naam already kisi aur chat mein use ho raha hai");
+      return false;
     }
-    reset();
+
+    try {
+      await axios.patch(
+        `http://localhost:3000/api/chat/${id}`,
+        { title: trimmed },
+        { withCredentials: true },
+      );
+      setChats((prev) =>
+        prev.map((chat) => (chat._id === id ? { ...chat, title: trimmed } : chat)),
+      );
+      return true;
+    } catch (err) {
+      console.log("Rename error:", err.response?.data || err.message);
+      toast.error("Rename nahi ho paya");
+      return false;
+    }
   };
+
+  const submitHandler = async (data) => {
+    const trimmedTitle = data.title.trim();
+
+    if (isTitleTaken(trimmedTitle)) {
+      toast.error("Ye naam already use ho raha hai, alag naam try karo");
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        "http://localhost:3000/api/chat/",
+        { title: trimmedTitle },
+        { withCredentials: true },
+      );
+      const newChat = res.data.chat;
+
+      setChats((prev) => [newChat, ...prev]);
+      setArr([]);
+      setActiveChatId(newChat._id);
+
+      reset();
+    } catch (err) {
+      console.log("Error creating chat:", err.response?.data || err.message);
+    }
+  };
+
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/chat/", {
-        withCredentials: true,
-      })
+      .get("http://localhost:3000/api/chat/", { withCredentials: true })
       .then((response) => {
-        console.log(response.data);
         setChats(response.data.chats.reverse());
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => console.log(err));
   }, []);
 
-  useEffect(()=>{
-      const handleCloseMenu=(event)=>{
-          if(menuRef.current && !menuRef.current.contains(event.target)){
-            setmenuid(null);
-          }
+  useEffect(() => {
+    const handleCloseMenu = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setmenuid(null);
       }
-      document.addEventListener("mousedown",handleCloseMenu);
-      return ()=>  document.removeEventListener("mousedown",handleCloseMenu);
-  },[]);
+    };
+    document.addEventListener("mousedown", handleCloseMenu);
+    return () => document.removeEventListener("mousedown", handleCloseMenu);
+  }, []);
+
+  // Search query ke hisaab se list filter — case-insensitive
+  const filteredChats = chats.filter((chat) =>
+    chat.title.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+  );
 
   return (
     <div
-      className=" bg-[#171717] text-[#b4b4b4]
-       w-[260px]
-      p-4 flex flex-col justify-between  relative h-full z-50 "
+      className="
+        bg-[var(--bg-secondary)] text-[var(--text-secondary)]
+        w-[270px]
+        p-4 flex flex-col justify-between relative h-full z-50
+        border-r border-[var(--border-color)]
+        transition-colors duration-300
+      "
     >
       <button
-        className="md:hidden absolute top-3 right-4 text-white text-2xl"
+        type="button"
+        className="
+          md:hidden flex items-center justify-center
+          w-10 h-10 rounded-[var(--radius-md)]
+          bg-[var(--bg-tertiary)]
+          border border-[var(--border-color)]
+          text-[var(--text-primary)] text-xl
+          absolute top-3 right-4 z-10
+          hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]
+          active:scale-95 transition-colors duration-200
+        "
         onClick={onClose}
       >
         <i className="ri-close-line"></i>
       </button>
-      <div className="flex flex-col gap-10">
-        <img
-          src="/icon.png"
-          alt="GPT Logo"
-          className="
-     w-7 h-7
-    rounded-full
-    p-[2px]
-    ml-2
-    bg-[#fff]
-    cursor-pointer
-    transition-all
-    duration-200
-    hover:shadow-[0_0_8px_rgba(255,255,255,0.45)]
-  "
-        />
+
+      <div className="flex flex-col gap-8">
+        <div className="flex items-center gap-2 ml-1">
+          <div className="w-8 h-8 rounded-[var(--radius-md)] bg-[var(--accent)] flex items-center justify-center text-white text-sm font-bold shadow-md">
+            Z
+          </div>
+          <span className="text-[var(--text-primary)] font-semibold">Zoro</span>
+        </div>
 
         <div className="flex flex-col gap-2">
-          <div className="relative">
-            <div
-              className=" flex gap-2 items-center text-white rounded-md px-3 py-2 transition
-            duration-200 hover:bg-[rgba(255,255,255,0.08)] cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNewChat();
-              }}
-            >
-              <i className="fa-solid fa-pen-to-square text-lg"></i>
-              <p className="text-sm  ">New chat</p>
-            </div>
-            {showInput && (
-              <form
-                onSubmit={handleSubmit(createNewChat)}
-                onClick={(e) => e.stopPropagation()}
-                className="absolute left-1/2
-          top-0
-        
-        flex items-center gap-3 w-50 mt-4"
-              >
-                <input
-                  type="text"
-                  {...register("title")}
-                  placeholder="Enter chat title"
-                  className="
-        flex-1
-        px-2 py-2.5
-        text-sm
-        rounded-md
-        bg-[rgba(255,255,255,0.10)]
-        text-white
-        placeholder:text-[#b4b4b4]
-        border border-[rgba(255,255,255,0.2)]
-        focus:outline-none
-        focus:ring-2 focus:ring-[#b4b4b4]
-      "
-                />
-
-                <button
-                  type="submit"
-                  className="
-        px-3 py-2.5
-        rounded-md
-        bg-[#eaeaea]
-        text-black
-        text-sm
-        font-semibold
-        hover:bg-white
-        transition
-      "
-                >
-                  Create
-                </button>
-              </form>
-            )}
-          </div>
-          <div
-            className="flex gap-2 items-center text-white rounded-md px-3 py-2 transition
-    duration-200 hover:bg-[rgba(255,255,255,0.08)] cursor-pointer`}"
+          <form
+            onSubmit={handleSubmit(submitHandler)}
+            className="flex items-center gap-2 w-full"
           >
-            <i class="ri-search-line text-lg"></i>
-            <p className="text-sm  ">Search chats</p>
+            <input
+              type="text"
+              {...register("title", { required: true })}
+              placeholder="New chat..."
+              className="
+                min-w-0 flex-1
+                px-3 py-2.5 text-sm rounded-[var(--radius-md)]
+                bg-[var(--bg-input)]
+                text-[var(--text-primary)]
+                border border-[var(--border-color)]
+                placeholder:text-[var(--text-secondary)]
+                focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+                transition-colors duration-200
+              "
+            />
+            <button
+              type="submit"
+              title="Start a new chat"
+              className="
+                flex-shrink-0 w-10 h-10
+                flex items-center justify-center
+                rounded-[var(--radius-md)]
+                bg-[var(--accent)] text-white
+                hover:bg-[var(--accent-strong)]
+                active:scale-95 transition
+              "
+            >
+              <i className="fa-solid fa-pen-to-square text-sm"></i>
+            </button>
+          </form>
+
+          {/* Search — ab actual input hai, list ko live filter karta hai */}
+          <div
+            className="
+              flex gap-2 items-center
+              rounded-[var(--radius-md)] px-3 py-2.5
+              bg-[var(--bg-input)]
+              border border-[var(--border-color)]
+              focus-within:ring-2 focus-within:ring-[var(--accent)]
+              transition-colors duration-200
+            "
+          >
+            <i className="ri-search-line text-sm text-[var(--text-secondary)]"></i>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search chats"
+              className="
+                flex-1 bg-transparent text-sm
+                text-[var(--text-primary)]
+                placeholder:text-[var(--text-secondary)]
+                focus:outline-none
+              "
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                <i className="ri-close-line text-sm"></i>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col mt-15 gap-2 flex-1 overflow-y-auto ">
-        <h1 className="text-gray-300 font-semibold text-sm">Your Chats</h1>
-        {chats.length > 0 ? (
-          chats.map((chat) => (
-            <div
-              key={chat._id}
-               onClick={(e) =>{
-                e.stopPropagation();
-               handleChatSelect(chat._id)}
-               } 
-              className={`bg-[rgba(180,180,180,0.08)]
-  ${
-    activeChatId == chat._id
-      ? "border border-2 border-[#b4b4b4]"
-      : "border-transparent"
-  }
-           text-sm relative cursor-pointer px-4 py-2
-         flex justify-between whitespace-nowrap
-            rounded-md text-white group hover:bg-[rgba(180,180,180,0.10)]`}
-            >
-              <span>
-                {chat.title}
-              </span>
+      <div className="flex flex-col mt-8 gap-1.5 flex-1 overflow-y-auto">
+        <h1 className="text-[var(--text-secondary)] font-semibold text-xs uppercase tracking-wide px-1 mb-1">
+          Your Chats
+        </h1>
 
-              <i
-                className="ri-more-2-fill opacity-0 group-hover:opacity-90
-                  transition-opacity duration-200"
-                onClick={(e) => {
-                  e.stopPropagation(); //click event parent elements ko propagate nahi hone deta.ye icon click se parent div  trigger nahi honge.
-                  toggleMenu(chat._id);
-                }}
-              ></i>
-              {menuid == chat._id && (
-                <div
-                  ref={menuRef}
-                  className=" bg-[rgba(255,255,255,0.05)]  backdrop-blur-md
-                    border border-[rgba(255,255,255,0.12)]
-                  shadow-lg
-                   w-36 rounded-md absolute top-full right-0  mt-1 z-50"
-                >
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteChat(chat._id);
-                    }}
-                    className="px-4 py-2 text-red-400 text-sm hover:bg-[rgba(255,255,255,0.08)] cursor-pointer flex gap-2 items-center"
-                  >
-                    <i className="ri-delete-bin-6-line"></i>Delete
-                  </div>
-                  <div className="px-4 py-2 text-[#b4b4b4] text-sm hover:bg-[rgba(255,255,255,0.08)] cursor-pointer flex gap-2 items-center">
-                    <i className="ri-pencil-line"></i>Rename
-                  </div>
-                </div>
-              )}
-            </div>
+        {filteredChats.length > 0 ? (
+          filteredChats.map((chat) => (
+            <ChatItem
+              key={chat._id}
+              chat={chat}
+              isActive={activeChatId === chat._id}
+              isMenuOpen={menuid === chat._id}
+              handleChatSelect={handleChatSelect}
+              toggleMenu={toggleMenu}
+              handleDeleteChat={handleDeleteChat}
+              menuRef={menuRef}
+              handleRenameChat={handleRenameChat}
+            />
           ))
+        ) : chats.length === 0 ? (
+          <p className="px-3 mt-4 text-xs text-[var(--text-secondary)] italic">
+            No chats yet...
+          </p>
         ) : (
-          <p className="mt-5 text-xs text-gray-300">No chat yet</p>
+          <p className="px-3 mt-4 text-xs text-[var(--text-secondary)] italic">
+            No chats match "{searchQuery}"
+          </p>
         )}
       </div>
 
-      <div className=" text-center border-t-1 border-t-[rgba(255,255,255,0.5)]">
-        <p className="mt-2 text-[#b4b4b4]">Built with ❤️ using Zoro</p>
+      <div className="flex flex-col gap-3 pt-3 border-t border-[var(--border-color)]">
+        <Theme />
+        <p className="text-center text-xs text-[var(--text-secondary)]">
+          Built with ❤️ using Zoro
+        </p>
       </div>
     </div>
   );
 };
 
 export default ChatSidebar;
+

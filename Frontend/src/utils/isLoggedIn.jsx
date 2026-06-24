@@ -7,7 +7,6 @@ const isLoggedIn = async () => {
     });
     return true;
   } catch {
-    console.log("Not logged in (401)");
     return false;
   }
 };
