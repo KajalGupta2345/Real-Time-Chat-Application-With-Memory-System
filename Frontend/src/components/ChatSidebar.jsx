@@ -30,7 +30,7 @@ const ChatSidebar = ({ onClose }) => {
 
   const handleDeleteChat = (id) => {
     axios
-      .delete(`http://localhost:3000/api/chat/${id}`, { withCredentials: true })
+      .delete(`https://real-time-chat-application-with-memory.onrender.com/api/chat/${id}`, { withCredentials: true })
       .then(() => {
         setChats((prev) => prev.filter((chat) => chat._id !== id));
         setArr([]);
@@ -53,7 +53,7 @@ const ChatSidebar = ({ onClose }) => {
 
     try {
       await axios.patch(
-        `http://localhost:3000/api/chat/${id}`,
+        `https://real-time-chat-application-with-memory.onrender.com/api/chat/${id}`,
         { title: trimmed },
         { withCredentials: true },
       );
@@ -78,7 +78,7 @@ const ChatSidebar = ({ onClose }) => {
 
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/chat/",
+        "https://real-time-chat-application-with-memory.onrender.com/api/chat/",
         { title: trimmedTitle },
         { withCredentials: true },
       );
@@ -96,7 +96,7 @@ const ChatSidebar = ({ onClose }) => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/chat/", { withCredentials: true })
+      .get("https://real-time-chat-application-with-memory.onrender.com/api/chat/", { withCredentials: true })
       .then((response) => {
         setChats(response.data.chats.reverse());
       })

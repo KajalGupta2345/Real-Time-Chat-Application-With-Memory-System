@@ -15,7 +15,7 @@ const Login = ({ setAuth }) => {
   const submitHandler = async (data) => {
     try {
       await axios.post(
-        "http://localhost:3000/api/auth/login",
+        "https://real-time-chat-application-with-memory.onrender.com/api/auth/login",
         { email: data.email, password: data.password },
         { withCredentials: true },
       );

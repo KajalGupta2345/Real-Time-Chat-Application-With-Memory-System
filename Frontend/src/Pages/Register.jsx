@@ -15,7 +15,7 @@ const Register = () => {
   const submitHandler = async (data) => {
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/auth/register",
+        "https://real-time-chat-application-with-memory.onrender.com/api/auth/register",
         {
           email: data.email,
           fullName: {

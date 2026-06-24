@@ -30,7 +30,7 @@ export const ChatProvider = ({ children, setAuth }) => {
     setArr([]);
 
     try {
-      const res = await axios.get(`http://localhost:3000/api/messages/${id}`, {
+      const res = await axios.get(`https://real-time-chat-application-with-memory.onrender.com/api/messages/${id}`, {
         withCredentials: true,
       });
 
@@ -46,7 +46,7 @@ export const ChatProvider = ({ children, setAuth }) => {
 
   // Socket connect — sirf ek baar
   useEffect(() => {
-    const socketInstance = io("http://localhost:3000/", {
+    const socketInstance = io("https://real-time-chat-application-with-memory.onrender.com/", {
       withCredentials: true,
     });
     setSocket(socketInstance);
