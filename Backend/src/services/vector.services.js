@@ -3,7 +3,7 @@ const { Pinecone } = require('@pinecone-database/pinecone');
 // Initialize a Pinecone client with your API key
 const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
 
-const cohortChatgptIndex = pc.Index('zoro-deploy');
+const cohortChatgptIndex = pc.Index('chatgpt-vector-db');
 
 async function createMemory({ vectors, metadata, messageId }) {
     await cohortChatgptIndex.upsert([{
