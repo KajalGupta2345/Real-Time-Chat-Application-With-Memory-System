@@ -13,7 +13,7 @@ async function createMemory({ vectors, metadata, messageId }) {
     }]); 
 };
 
-async function queryMemory({ queryVector, limit = 2, metadata }) {
+async function queryMemory({ queryVector, limit = 10, metadata }) {
     const data = await cohortChatgptIndex.query({
         vector: queryVector,
         topK: limit,
